@@ -215,7 +215,10 @@
   .dim-row .dt{font-size:12px;color:var(--sub);line-height:1.6}
 
   .card-preview{margin-top:10px;background:var(--panel);border:2px solid var(--ink);border-radius:16px;padding:7px;box-shadow:0 3px 0 var(--ink)}
-  .card-preview img{width:100%;display:block;border-radius:10px}
+  .card-preview img{width:100%;display:block;border-radius:10px;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+  .card-preview.pulse{animation:cardPulse 1.1s ease}
+  .card-hint{margin-top:8px;text-align:center;font-size:10.5px;color:var(--sub);line-height:1.6}
+  @keyframes cardPulse{0%,100%{transform:scale(1)}30%{transform:scale(1.03)}60%{transform:scale(.99)}}
   .card-fallback{padding:44px 16px;text-align:center;font-size:11px;color:var(--sub);line-height:1.8}
   .actions{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .again{font-size:11px;color:var(--sub);text-align:center;padding:22px 0 0;cursor:pointer}
@@ -343,6 +346,7 @@
 
     <div class="block-title"><span>你的结果卡</span><span>SHARE</span></div>
     <div class="card-preview" id="cardBox"><div class="card-fallback">正在生成结果卡…</div></div>
+    <div class="card-hint" id="cardHint">手机长按上方图片，即可保存到相册</div>
     <div class="actions">
       <button class="btn" id="saveBtn">保存结果卡</button>
       <button class="btn ghost" id="copyBtn">复制喊话文案</button>
@@ -775,14 +779,22 @@
   $("startBtn").onclick = function(){ reset(); renderQ(); show("s-quiz"); };
   $("backBtn").onclick = function(){ if (idx > 0){ idx--; renderQ(); } };
   $("againBtn").onclick = function(){ reset(); show("s-intro"); };
+  var IS_TOUCH = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (IS_TOUCH && $("cardHint")) $("cardHint").textContent = "长按上方卡片图片 → 存储到照片 / 保存图片";
   $("saveBtn").onclick = function(){
     var img = $("cardImg");
     if (!img || !img.src){ toast("结果卡还没生成完"); return; }
-    var a = document.createElement("a");
-    a.download = "宿舍容忍度-" + RESULT.tier.name + ".png";
-    a.href = img.src;
-    document.body.appendChild(a); a.click(); a.remove();
-    toast("已保存，手机可长按图片保存");
+    if (IS_TOUCH){
+      toast("长按上方卡片图片即可保存");
+      var cb = $("cardBox");
+      cb.classList.remove("pulse"); void cb.offsetWidth; cb.classList.add("pulse");
+    }else{
+      var a = document.createElement("a");
+      a.download = "宿舍容忍度-" + RESULT.tier.name + ".png";
+      a.href = img.src;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast("已开始下载");
+    }
   };
   $("copyBtn").onclick = function(){
     if (!RESULT) return;
