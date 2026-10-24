@@ -781,17 +781,39 @@
   $("againBtn").onclick = function(){ reset(); show("s-intro"); };
   var IS_TOUCH = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
   if (IS_TOUCH && $("cardHint")) $("cardHint").textContent = "长按上方卡片图片 → 存储到照片 / 保存图片";
+  function dataURLtoBlob(u){
+    try{
+      var p = u.split(","), mime = p[0].match(/:(.*?);/)[1], bin = atob(p[1]), n = bin.length, arr = new Uint8Array(n);
+      while(n--){ arr[n] = bin.charCodeAt(n); }
+      return new Blob([arr], {type:mime});
+    }catch(e){ return null; }
+  }
+  function saveBlob(blob, name){
+    var a = document.createElement("a");
+    a.download = name; a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+  }
   $("saveBtn").onclick = function(){
     var img = $("cardImg");
     if (!img || !img.src){ toast("结果卡还没生成完"); return; }
+    var name = "宿舍容忍度-" + RESULT.tier.name + ".png";
+    var blob = dataURLtoBlob(img.src);
+    var file = blob ? new File([blob], name, {type:"image/png"}) : null;
+    if (IS_TOUCH && file && navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:"宿舍容忍度结果卡"}).catch(function(){});
+      return;
+    }
     if (IS_TOUCH){
       toast("长按上方卡片图片即可保存");
       var cb = $("cardBox");
       cb.classList.remove("pulse"); void cb.offsetWidth; cb.classList.add("pulse");
-    }else{
+      return;
+    }
+    if (blob){ saveBlob(blob, name); toast("已开始下载"); }
+    else{
       var a = document.createElement("a");
-      a.download = "宿舍容忍度-" + RESULT.tier.name + ".png";
-      a.href = img.src;
+      a.download = name; a.href = img.src;
       document.body.appendChild(a); a.click(); a.remove();
       toast("已开始下载");
     }
